@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<script>
+// GitHub Pages PWA fix: redirect any 404 back to index
+var path = window.location.pathname;
+var repo = '/Workout-Timer';
+if (path.indexOf(repo) === 0) {
+  window.location.replace(repo + '/');
+} else {
+  window.location.replace('/');
+}
+</script>
+</head>
+<body></body>
+</html>

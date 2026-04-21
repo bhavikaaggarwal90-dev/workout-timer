@@ -296,7 +296,7 @@ function unlockAudio(){
 
 function playTing(style){
   try{
-    if(!_audioCtx) return;
+    if(!_audioCtx){try{_audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(ex){return;}}
     var ctx=_audioCtx;
     var go=function(){
       var t=ctx.currentTime;
@@ -729,16 +729,32 @@ function resetApp(){
 
 /* HISTORY */
 function renderHistory(){
-  var list=document.getElementById('history-list'),history=loadHistory();
+  var list=document.getElementById('history-list');
+  var history=loadHistory();
   if(!history.length){list.innerHTML='<div class="history-empty"><div class="big">&#128196;</div>No workouts yet.<br/>Complete your first session to see it here.</div>';return;}
   list.innerHTML='';
   history.forEach(function(rec){
-    var item=document.createElement('div');item.className='history-item';item.dataset.id=rec.id;
+    var item=document.createElement('div');
+    item.className='history-item';
+    item.dataset.id=String(rec.id);
     var exRows=rec.exercises.map(function(ex){
-      var chips=ex.sets.map(function(s){return '<span class="hist-set-chip">Set '+s.num+' · '+fmt(s.workMs/1000)+'</span>';}).join('');
+      var chips=ex.sets.map(function(s){return '<span class="hist-set-chip">Set '+s.num+' &middot; '+fmt(s.workMs/1000)+'</span>';}).join('');
       return '<div class="hist-ex"><div class="hist-ex-header"><span class="hist-ex-name">'+ex.name+'</span><span class="hist-ex-duration">'+fmtD(ex.totalWorkMs)+'</span></div>'+(ex.note?'<div class="hist-ex-rest">'+ex.note+'</div>':'')+'<div class="hist-ex-sets">'+chips+'</div><div class="hist-ex-rest">Rest: '+fmtD(ex.totalRestMs)+'</div></div>';
     }).join('');
-    item.innerHTML='<div class="history-item-header" onclick="toggleHistory(\'"+rec.id+"\')"><div><div class="history-item-date">'+fmtDate(rec.date)+'</div><div class="history-item-meta">'+rec.exercises.length+' exercises · '+rec.totalSets+' sets</div></div><div><div class="history-item-time">'+fmt(rec.totalMs/1000)+'</div><div class="history-item-time-label">total</div></div><span class="history-chevron">▼</span></div><div class="history-item-body"><div class="hist-stat-row"><div class="hist-stat"><div class="hist-stat-val">'+fmt(rec.totalWorkMs/1000)+'</div><div class="hist-stat-label">Working</div></div><div class="hist-stat"><div class="hist-stat-val">'+fmt(rec.totalRestMs/1000)+'</div><div class="hist-stat-label">Rest</div></div><div class="hist-stat"><div class="hist-stat-val">'+rec.totalSets+'</div><div class="hist-stat-label">Sets</div></div></div>'+exRows+'<button class="hist-delete-btn" onclick="event.stopPropagation();deleteFromHistory(\'"+rec.id+"\')">Delete this workout</button></div>';
+    var header=document.createElement('div');
+    header.className='history-item-header';
+    header.innerHTML='<div><div class="history-item-date">'+fmtDate(rec.date)+'</div><div class="history-item-meta">'+rec.exercises.length+' exercises &middot; '+rec.totalSets+' sets</div></div><div><div class="history-item-time">'+fmt(rec.totalMs/1000)+'</div><div class="history-item-time-label">total</div></div><span class="history-chevron">&#9660;</span>';
+    header.addEventListener('click',function(){item.classList.toggle('open');});
+    var body=document.createElement('div');
+    body.className='history-item-body';
+    body.innerHTML='<div class="hist-stat-row"><div class="hist-stat"><div class="hist-stat-val">'+fmt(rec.totalWorkMs/1000)+'</div><div class="hist-stat-label">Working</div></div><div class="hist-stat"><div class="hist-stat-val">'+fmt(rec.totalRestMs/1000)+'</div><div class="hist-stat-label">Rest</div></div><div class="hist-stat"><div class="hist-stat-val">'+rec.totalSets+'</div><div class="hist-stat-label">Sets</div></div></div>'+exRows;
+    var delBtn=document.createElement('button');
+    delBtn.className='hist-delete-btn';
+    delBtn.textContent='Delete this workout';
+    (function(id){delBtn.addEventListener('click',function(e){e.stopPropagation();try{var h=loadHistory().filter(function(r){return String(r.id)!==String(id);});localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch(e2){}renderHistory();});})(rec.id);
+    body.appendChild(delBtn);
+    item.appendChild(header);
+    item.appendChild(body);
     list.appendChild(item);
   });
 }
